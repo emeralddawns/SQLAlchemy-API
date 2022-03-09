@@ -7,7 +7,7 @@ import time
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, inspect, func, desc
+from sqlalchemy import create_engine, func, desc
 
 from flask import Flask, jsonify
 
@@ -28,12 +28,13 @@ Base.classes.keys()
 Station = Base.classes.station
 Measurement = Base.classes.measurement
 
-# Create our session (link) from Python to the DB
+# Create/binds our session (link) from Python to the DB
 session = Session(engine)
 
 
 app = Flask(__name__)
 
+# CAN I MAKE THESE CLICKABLE LINKS?
 @app.route("/")
 def welcome():
     """List all available api routes."""
@@ -58,20 +59,25 @@ def precipitation():
                     filter(Measurement.date > query_date).\
                     order_by(Measurement.date).all()
     date_prcp_dict = dict(date_and_prcp)
-    f"JSON list of dates and precipitation (in):<br/>"
+
     session.close()
     return jsonify(date_prcp_dict)
 
-# Returns jsonified data of all of the stations in the database
+# Return a JSON list of stations from the dataset.
 @app.route("/api/v1.0/stations")
 def stations():
-    station_names = session.query(Station.name).all()
-    f"JSON list of stations from the dataset:<br/>"
+    station_names = session.query(Station.station, Station.name).all()
+    all_stations = []
+    for station, name in station_names:
+            station_dict = {}
+            station_dict["station"] = station
+            station_dict["name"] = name
 
+            all_stations.append(station_dict)
     session.close()
-    return jsonify(station_names)
+    return jsonify(all_stations)
 
-# Returns jsonified data for the most active station for the last year of data
+# Returns jsonified data for the most active station for the last year of data - LAST YEAR FOR THAT STATION OR LAST YEAR OF DATASET?
 @app.route("/api/v1.0/tobs")
 def tobs():
     last_date = session.query(Measurement.date).order_by(Measurement.date.desc()).first().date
@@ -82,17 +88,62 @@ def tobs():
                             .group_by(Measurement.station)\
                             .order_by(desc("Total")).all()
     active_station = max(station_activity, key=lambda x:x[1])    
-    date_and_tobs = session.query(Measurement.date, Measurement.tobs)\
-                    .filter(Measurement.date > query_date)\
+    date_and_tobs = session.query(Station.name, Measurement.date, Measurement.tobs)\
+                    .filter(Measurement.date >= query_date)\
                     .filter(Measurement.station == active_station[0]).all()
-    date_tobs_dict = dict(date_and_tobs)
-    f"JSON list of temperature observations from the most active station"
+    station_and_tobs = []
+    for line in date_and_tobs :
+            date_tobs_dict = {}
+            date_tobs_dict["station"] = line[0]
+            date_tobs_dict["date"] = line[1]
+            date_tobs_dict["tobs"] = line[2]
 
+            station_and_tobs.append(date_tobs_dict)
     session.close()
-    return jsonify(date_tobs_dict)
+    return jsonify(station_and_tobs)
+
+# IS THIS SUPPOSED TO BE FOR ALL STATIONS?
+# Returns the min, max, and average temperatures calculated from the given start date to the end of the dataset
+# @app.route("/api/v1.0/<start_date>")
+# def start(start_date):
+#     #station_activity = session.query(Measurement.station, func.count(Measurement.station).label("Total"))\
+#     #                        .group_by(Measurement.station)\
+#     #                        .order_by(desc("Total")).all()
+#     #active_station = max(station_activity, key=lambda x:x[1])
+
+#     TMIN = session.query(func.min(Measurement.tobs))\
+#                             .filter(Measurement.date >= start_date).scalar()
+
+#     TAVG = session.query(func.avg(Measurement.tobs))\
+#                             .filter(Measurement.date >= start_date).scalar()
+#     TAVG = round(TAVG, 1)
+#     TMAX = session.query(func.max(Measurement.tobs))\
+#                             .filter(Measurement.date >= start_date).scalar()
+#                             #.filter(Measurement.station == active_station[0])\
+#     session.close()
+#     #WHY DO THESE RETURN IN ALPHABETICAL ORDER?
+#     return jsonify({"TMIN": f"{TMIN}", "TAVG": f"{TAVG}", "TMAX": f"{TMAX}"})
 
 @app.route("/api/v1.0/<start_date>")
 def start(start_date):
+    temperatures = session.query(Measurement.date, func.avg(Measurement.tobs),func.min(Measurement.tobs), func.max(Measurement.tobs))\
+                            .filter(Measurement.date >= start_date)\
+                            .group_by(Measurement.date).all()
+
+    active_station = {}
+    for line in temperatures:
+        active_station[line[0]] = {"TMIN": line[2], "TAVG": round(line[1],1), "TMAX": line[3]}
+
+
+    session.close()
+    return jsonify(active_station)
+
+
+# FOR ALL STATIONS?
+# Returns the min, max, and average temperatures calculated from the given start date to the given end date
+@app.route("/api/v1.0/<start_date>/<end_date>")
+def startend(start_date, end_date):
+
     station_activity = session.query(Measurement.station, func.count(Measurement.station).label("Total"))\
                             .group_by(Measurement.station)\
                             .order_by(desc("Total")).all()
@@ -100,30 +151,21 @@ def start(start_date):
 
     TMIN = session.query(func.min(Measurement.tobs))\
                             .filter(Measurement.station == active_station[0])\
-                            .filter(Measurement.date >= start_date).scalar()
+                            .filter(Measurement.date >= start_date)\
+                            .filter(Measurement.date <= end_date).scalar()
 
-    TAVG = session.query(func.max(Measurement.tobs))\
+    TAVG = session.query(func.avg(Measurement.tobs))\
                             .filter(Measurement.station == active_station[0])\
-                            .filter(Measurement.date >= start_date).scalar()
-
-    TMAX = session.query(func.avg(Measurement.tobs))\
+                            .filter(Measurement.date >= start_date)\
+                            .filter(Measurement.date <= end_date).scalar()
+    TAVG = round(TAVG, 1)
+    TMAX = session.query(func.max(Measurement.tobs))\
                             .filter(Measurement.station == active_station[0])\
-                            .filter(Measurement.date >= start_date).scalar()
+                            .filter(Measurement.date >= start_date)\
+                            .filter(Measurement.date <= end_date).scalar()
 
-    print(f"calculate `TMIN`, `TAVG`, and `TMAX` for all dates greater than and equal to the start date")
-    return jsonify(lowest_temp), jsonify(highest_temp)
-
-
-
-
-
-
-
-
-
-@app.route("/api/v1.0/<start>/<end>")
-def startend(start_date, end_date):
-    return "calculate the `TMIN`, `TAVG`, and `TMAX` for dates between the start and end date inclusive"
+    session.close()
+    return jsonify({"TMIN": f"{TMIN}", "TAVG": f"{TAVG}", "TMAX": f"{TMAX}"})
 
 if __name__ == "__main__":
     app.run(debug=True)

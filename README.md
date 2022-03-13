@@ -7,6 +7,7 @@ The code uses SQLAlchemy ORM queries, Pandas, and Matplotlib to analyze temperat
 # What the code calculates
 
 The **climate_starter.ipynb** code uses queries and data frames to do the following:
+    
     1. Create a data frame with the date and precipitation amount for each date in the last year of data.
 
     2. Create a bar plot of the last year of precipitation data.
@@ -21,17 +22,17 @@ The **climate_starter.ipynb** code uses queries and data frames to do the follow
 
 The **app.py** code contains queries that will display the following in an API:
 
-    1. List all routes that are available.
+    1. All routes that are available.
     
-    2. Return a JSON list of precipitation data for the previous year.
+    2. A JSON list of precipitation data for the previous year.
 
-    3. Return a JSON list of stations from the dataset.
+    3. A JSON list of stations from the dataset.
 
-    4. Return a JSON list of temperature observations (TOBS) for the previous year.
+    4. A JSON list of temperature observations (TOBS) for the previous year.
 
-    5. Return a JSON list of the minimum temperature, the average temperature, and the max temperature from given start date to the end of the data.
+    5. A JSON list of the minimum temperature, the average temperature, and the max temperature from given start date to the end of the data.
 
-    6. Return a JSON list of the minimum temperature, the average temperature, and the max temperature for a given start-end range.
+    6. A JSON list of the minimum temperature, the average temperature, and the max temperature for a given start-end range.
 
 The **temp_analysis_bonus_1_starter.ipynb** reads the "hawaii_measurements.csv" and finds the following:
 
@@ -41,6 +42,10 @@ The **temp_analysis_bonus_1_starter.ipynb** reads the "hawaii_measurements.csv" 
 
     3. The p-value from an un-paired t-test to determine if the difference in means between June and December is statistically significant.
 
-The **temp_analysis_bonus_2_starter.ipynb** code uses queries and data frames to do the following:
+The **temp_analysis_bonus_2_starter.ipynb** code uses queries and data frames to do the following for a specified date range:
 
-    1.
+    1. Plot the min, avg, and max temperature for in bar chart, with the peak-to-peak (TMAX-TMIN) value as the y error bar (YERR).
+
+    2. Create a list of rainfall per weather station.
+
+    3. 

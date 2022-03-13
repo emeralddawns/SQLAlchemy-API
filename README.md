@@ -14,11 +14,11 @@ The **climate_starter.ipynb** code uses queries and data frames to do the follow
 
     3. Display the summary statistic for the last year of precipitation data.
 
-    4. Finds the lowest, highest, and average temperature of the most active weather station.
+    4. Find the lowest, highest, and average temperature of the most active weather station.
 
     5. Create a data frame with the date and temperature for each date in the last year of data.
 
-    6. Creates a histogram of the last year of temperature data.
+    6. Create a histogram of the last year of temperature data.
 
 The **app.py** code contains queries that will display the following in an API:
 
@@ -47,5 +47,3 @@ The **temp_analysis_bonus_2_starter.ipynb** code uses queries and data frames to
     1. Plot the min, avg, and max temperature for in bar chart, with the peak-to-peak (TMAX-TMIN) value as the y error bar (YERR).
 
     2. Create a list of rainfall per weather station.
-
-    3. 

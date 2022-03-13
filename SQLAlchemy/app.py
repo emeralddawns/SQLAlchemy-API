@@ -34,7 +34,7 @@ session = Session(engine)
 
 app = Flask(__name__)
 
-# CAN I MAKE THESE CLICKABLE LINKS?
+
 @app.route("/")
 def welcome():
     """List all available api routes."""

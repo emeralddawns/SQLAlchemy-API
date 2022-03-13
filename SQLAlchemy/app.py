@@ -77,7 +77,7 @@ def stations():
     session.close()
     return jsonify(all_stations)
 
-# Returns jsonified data for the most active station for the last year of data - LAST YEAR FOR THAT STATION OR LAST YEAR OF DATASET?
+# Returns jsonified data for the most active station for the last year of data
 @app.route("/api/v1.0/tobs")
 def tobs():
     last_date = session.query(Measurement.date).order_by(Measurement.date.desc()).first().date
@@ -88,9 +88,10 @@ def tobs():
                             .group_by(Measurement.station)\
                             .order_by(desc("Total")).all()
     active_station = max(station_activity, key=lambda x:x[1])    
-    date_and_tobs = session.query(Station.name, Measurement.date, Measurement.tobs)\
+    date_and_tobs = session.query(Measurement.station, Measurement.date, Measurement.tobs)\
                     .filter(Measurement.date >= query_date)\
                     .filter(Measurement.station == active_station[0]).all()
+
     station_and_tobs = []
     for line in date_and_tobs :
             date_tobs_dict = {}
@@ -102,28 +103,7 @@ def tobs():
     session.close()
     return jsonify(station_and_tobs)
 
-# IS THIS SUPPOSED TO BE FOR ALL STATIONS?
 # Returns the min, max, and average temperatures calculated from the given start date to the end of the dataset
-# @app.route("/api/v1.0/<start_date>")
-# def start(start_date):
-#     #station_activity = session.query(Measurement.station, func.count(Measurement.station).label("Total"))\
-#     #                        .group_by(Measurement.station)\
-#     #                        .order_by(desc("Total")).all()
-#     #active_station = max(station_activity, key=lambda x:x[1])
-
-#     TMIN = session.query(func.min(Measurement.tobs))\
-#                             .filter(Measurement.date >= start_date).scalar()
-
-#     TAVG = session.query(func.avg(Measurement.tobs))\
-#                             .filter(Measurement.date >= start_date).scalar()
-#     TAVG = round(TAVG, 1)
-#     TMAX = session.query(func.max(Measurement.tobs))\
-#                             .filter(Measurement.date >= start_date).scalar()
-#                             #.filter(Measurement.station == active_station[0])\
-#     session.close()
-#     #WHY DO THESE RETURN IN ALPHABETICAL ORDER?
-#     return jsonify({"TMIN": f"{TMIN}", "TAVG": f"{TAVG}", "TMAX": f"{TMAX}"})
-
 @app.route("/api/v1.0/<start_date>")
 def start(start_date):
     temperatures = session.query(Measurement.date, func.avg(Measurement.tobs),func.min(Measurement.tobs), func.max(Measurement.tobs))\
@@ -138,34 +118,22 @@ def start(start_date):
     session.close()
     return jsonify(active_station)
 
-
-# FOR ALL STATIONS?
-# Returns the min, max, and average temperatures calculated from the given start date to the given end date
+# # Returns the min, max, and average temperatures calculated from the given start date to the given end date
 @app.route("/api/v1.0/<start_date>/<end_date>")
 def startend(start_date, end_date):
 
-    station_activity = session.query(Measurement.station, func.count(Measurement.station).label("Total"))\
-                            .group_by(Measurement.station)\
-                            .order_by(desc("Total")).all()
-    active_station = max(station_activity, key=lambda x:x[1])
+    temperatures = session.query(Measurement.date, func.avg(Measurement.tobs),func.min(Measurement.tobs), func.max(Measurement.tobs))\
+                            .filter(Measurement.date >= start_date)\
+                            .filter(Measurement.date <= end_date)\
+                            .group_by(Measurement.date).all()
 
-    TMIN = session.query(func.min(Measurement.tobs))\
-                            .filter(Measurement.station == active_station[0])\
-                            .filter(Measurement.date >= start_date)\
-                            .filter(Measurement.date <= end_date).scalar()
-
-    TAVG = session.query(func.avg(Measurement.tobs))\
-                            .filter(Measurement.station == active_station[0])\
-                            .filter(Measurement.date >= start_date)\
-                            .filter(Measurement.date <= end_date).scalar()
-    TAVG = round(TAVG, 1)
-    TMAX = session.query(func.max(Measurement.tobs))\
-                            .filter(Measurement.station == active_station[0])\
-                            .filter(Measurement.date >= start_date)\
-                            .filter(Measurement.date <= end_date).scalar()
+    active_station = {}
+    for line in temperatures:
+        active_station[line[0]] = {"TMIN": line[2], "TAVG": round(line[1],1), "TMAX": line[3]}
 
     session.close()
-    return jsonify({"TMIN": f"{TMIN}", "TAVG": f"{TAVG}", "TMAX": f"{TMAX}"})
+    return jsonify(active_station)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
